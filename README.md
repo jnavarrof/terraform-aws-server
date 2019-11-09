@@ -1,0 +1,187 @@
+# AWS EC2 Instance deploy examples
+
+## Prerequesites
+
+### Download Terraform
+
+[Terraform download page](https://www.terraform.io/downloads.html)
+
+### Setup AWS cli credentials
+
+```bash
+# Install AWS client
+$ pip install aws-cli
+
+# Configure
+$ aws configure
+WS Access Key ID [None]: XXXXXX
+AWS Secret Access Key [None]: XXXXX
+Default region name [None]: eu-west-1
+Default output format [None]:
+
+# Test 
+$ aws s3 ls
+2019-11-08 13:02:56 shared-storage-s3
+2019-11-08 19:03:41 tf-state-storage-001
+```
+
+## Working with Terraform workspaces
+
+Each Terraform configuration has an associated backend that defines how operations are executed and where persistent data such as the Terraform state are stored.
+
+The persistent data stored in the backend belongs to a workspace. Initially the backend has only one workspace, called "default", and thus there is only one Terraform state associated with that configuration.
+
+
+List available workspaces
+
+```bash
+$ terraform workspace list
+  default
+  common
+* jnavarro
+
+$ terraform workspace show
+jnavarro
+```
+
+Select and switch between workspaces. Show resources.
+
+```bash
+# Select this ws and show resources
+$ terraform workspace select jnavarro
+$ terraform show
+# no resources
+
+$ terraform workspace select common
+Switched to workspace "common".
+$ terraform show
+
+# aws_iam_group.cloud:
+resource "aws_iam_group" "cloud" {
+    arn       = "arn:aws:iam::6666666:group/Cloud"
+[..]
+# aws_iam_group.developers:
+resource "aws_iam_group" "developers" {
+    arn       = "arn:aws:iam::66666666:group/Developers"
+[..]
+# aws_iam_policy.policy:
+resource "aws_iam_policy" "policy" {
+    arn         = "arn:aws:iam::666666666:policy/test-policy"
+    id          = "arn:aws:iam::666666666:policy/test-policy"
+[..]
+# aws_iam_role.test_role:
+resource "aws_iam_role" "test_role" {
+    arn                   = "arn:aws:iam::6666666:role/test_role"
+                        Service = "ec2.amazonaws.com"
+[..]
+# aws_s3_bucket.shared-storage-s3:
+resource "aws_s3_bucket" "shared-storage-s3" {
+    arn                         = "arn:aws:s3:::shared-storage-s3"
+    bucket_domain_name          = "shared-storage-s3.s3.amazonaws.com"
+    bucket_regional_domain_name = "shared-storage-s3.s3.eu-west-1.amazonaws.com"
+[..]
+```
+
+## Deploy a single EC2 instance
+
+```bash
+# Select workspace 
+$ cd ec2-instance
+$ terraform workspace select jnavarro
+
+# Deploy an instance
+$ terraform plan -var prefix=server1
+[..]
+
+$ terraform apply -var prefix=server1
+Plan: 3 to add, 0 to change, 0 to destroy.
+Do you want to perform these actions in workspace "jnavarro"?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+  Enter a value: yes
+aws_key_pair.keypair: Creating...
+aws_security_group.server: Creating...
+aws_key_pair.keypair: Creation complete after 1s [id=server1-jnavarro-keypair20191109211025215300000001]
+aws_security_group.server: Creation complete after 2s [id=sg-05fd998079994b67d]
+module.ec2.aws_instance.this[0]: Creating...
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+Outputs:
+instances_public_ips = [
+  "34.255.192.247",
+]
+
+# Show resources
+$ terraform show 
+[..]
+    tags                    = {}
+}
+Outputs:
+instances_public_ips = [
+    "34.255.192.247",
+]
+
+# Create a new workspace 
+$ terraform workspace new A
+Created and switched to workspace "A"!
+
+You are now on a new, empty workspace. Workspaces isolate their state,
+so if you run "terraform plan" Terraform will not see any existing state
+for this configuration.
+
+$ terraform show 
+# Nothing deployed in this workspace
+
+# Deploy an instance
+$ terraform plan -var prefix=server2
+[..]
+
+$ terraform apply -var prefix=server2
+[..]
+Outputs:
+instances_public_ips = [
+    "54.255.192.17",
+]
+
+# Destroy resources in this workspace
+$ terraform destroy -var prefix=server2
+Do you really want to destroy all resources in workspace "A"?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes
+
+# Remove workspace A. Switch to another worspace first.
+$ terraform workspace select jnavarro
+Switched to workspace "jnavarro"
+
+$ terraform workspace delete A
+Deleted workspace "A"!
+
+# Destroy resources in workspace jnavarro
+$ terraform destroy -var prefix=server1
+aws_key_pair.keypair: Refreshing state... [id=server1-jnavarro-keypair20191109211025215300000001]
+data.aws_vpc.default: Refreshing state...
+aws_security_group.server: Refreshing state... [id=sg-05fd998079994b67d]
+
+[..]
+Plan: 0 to add, 0 to change, 3 to destroy.
+
+Do you really want to destroy all resources in workspace "jnavarro"?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes
+[..]
+aws_key_pair.keypair: Destruction complete after 0s
+aws_security_group.server: Destruction complete after 1s
+
+Destroy complete! Resources: 3 destroyed.
+
+# Done!
+```
+
+## Deploy a single EC2 instance and attach an exsiting EBS volumen
+
+```bash
+```
