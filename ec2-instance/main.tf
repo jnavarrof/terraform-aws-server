@@ -3,7 +3,7 @@ variable "instances_number" {
 }
 
 resource "aws_security_group" "server" {
-  name        = "${terraform.workspace}-server"
+  name        = "${var.prefix}-server"
   description = "Allow Server inbound traffic"
   # vpc_id      = "${aws_vpc.main.id}"
 
@@ -25,14 +25,14 @@ resource "aws_security_group" "server" {
 }
 
 resource "aws_key_pair" "keypair" {
-  key_name_prefix = "${terraform.workspace}-keypair"
+  key_name_prefix = "${var.prefix}-${terraform.workspace}-keypair"
   public_key = file("~/.ssh/id_rsa.pub")
 }
 
 module "ec2" {
   source  = "github.com/jnavarrof/terraform-aws-ec2-instance"
 
-  name                        = "ec2-instance"
+  name                        = "${var.prefix}-ec2-instance"
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.nano"
   subnet_id                   = tolist(data.aws_subnet_ids.all.ids)[0]
@@ -40,6 +40,9 @@ module "ec2" {
   associate_public_ip_address = true
   monitoring                  = false
   key_name                    = aws_key_pair.keypair.key_name
-  user_data                   = file("bootstrap.sh")
+  user_data                   = file("../scripts/bootstrap.sh")
+
+  # Attacj instance role created in the common workspace
+  iam_instance_profile        = "ec2InstanceRole"
 }
 

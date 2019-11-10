@@ -120,7 +120,11 @@ Outputs:
 instances_public_ips = [
     "34.255.192.247",
 ]
+```
 
+## Create a new workspace and deploy another instance 
+
+```bash
 # Create a new workspace 
 $ terraform workspace new A
 Created and switched to workspace "A"!
@@ -157,6 +161,48 @@ Switched to workspace "jnavarro"
 
 $ terraform workspace delete A
 Deleted workspace "A"!
+```
+
+## Test S3 access
+
+```bash
+# Login to this instance
+$ ssh ubunt@$(terraform output -json | jq -r ".instances_public_ips.value[0]")
+Last login: Sun Nov 10 20:37:58 2019 from 80.5.212.139
+ubuntu@ip-172-31-5-180 $
+
+# Install the aws cli tool
+$ sudo pip install awscli
+
+# List s3 buckets
+$ aws s3 ls
+2019-11-08 19:16:17 shared-storage-s3
+2019-11-08 19:03:41 tf-state-storage-001
+
+# Access to the Terraform state bucket is denied
+$ aws s3 ls tf-state-storage-001
+An error occurred (AccessDenied) when calling the ListObjectsV2 operation: Access Denied
+
+# Working the share 
+$ aws s3 ls shared-storage-s3
+$ aws s3 cp NOFILE shared-storage-s3/NOFILE
+upload: ./NOFILE to s3://shared-storage-s3/NOFILE
+$ aws s3 ls s3://shared-storage-s3
+2019-11-10 21:37:14          0 NOFILE
+
+# Mount the S3 bucket using FUSE (low performance doing intensive I/O, file lock issues)
+$ mkdir $HOME/shared-storage-s3
+$ s3fs -o iam_role=ec2InstanceRole -o use_cache=/tmp shared-storage-s3 $HOME/shared-storage-s3
+$ dd if=/dev/zero of=ZERO bs=1M count=1024
+1073741824 bytes (1.1 GB, 1.0 GiB) copied, 47.63 s, 22.5 MB/s
+```
+
+## Destroy resources in this workspace
+
+```bash
+# Check current workspace
+$ terraform workspace show
+jnavarro
 
 # Destroy resources in workspace jnavarro
 $ terraform destroy -var prefix=server1

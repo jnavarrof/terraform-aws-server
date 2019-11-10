@@ -2,7 +2,7 @@
 
 set -e
 
-for i in $(lsblk -I 202 -o KNAME -n); do
+for i in $(lsblk -I 202 -o KNAME -n | grep -v "xvda"); do
 	DEVICE="/dev/$i"
 	# Check Storage volume in /dev/vdc
 	if [ ! -z "$(lsblk $DEVICE)" ]; then
@@ -18,10 +18,15 @@ for i in $(lsblk -I 202 -o KNAME -n); do
 	else
         	>&2 echo "Cannot find device $DEVICE"
 	fi
+	# Mount device
+	mkdir -p /mnt/$i
+	mount -t auto /dev/$i /mnt/$i
 done
 
-mkdir /mnt/{common,data}
-mount -t auto /dev/xvdh /mnt/common
-mount -t auto /dev/xvdi /mnt/data
+
+apt update
+apt install -y python-pip virtualenv s3fs
+pip install --upgrade pip
+pip install awscli
 
 exit
