@@ -230,4 +230,34 @@ Destroy complete! Resources: 3 destroyed.
 ## Deploy a single EC2 instance and attach an exsiting EBS volumen
 
 ```bash
+$ cd ec2-with-ebs/
+$ terraform workspace show
+jnavarro
+
+# Edit datasources or add a new variable to select an existing EBS volume
+
+# Validate 
+$ terraform validate
+Success! The configuration is valid.
+
+# Plan and deploy
+terraform plan -var prefix=server-ebs
+terraform apply -var prefix=server-ebs
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+Outputs:
+
+data_ebs_volume_attachment_id = [
+  "vol-0110d7629c3150532",
+]
+data_ebs_volume_attachment_instance_id = [
+  "i-00150ee806563c537",
+]
+instances_public_ips = [
+  "34.245.37.105",
+]
+
+# Destroy. WARN! Remember umount mounted filesystem (bootstrap.sh)
+ssh ubunut@34.245.37.105 "sudo umount /mnt/xvdi"
+terraform destroy -var prefix=server-ebs
 ```
