@@ -190,7 +190,7 @@ upload: ./NOFILE to s3://shared-storage-s3/NOFILE
 $ aws s3 ls s3://shared-storage-s3
 2019-11-10 21:37:14          0 NOFILE
 
-# Mount the S3 bucket using FUSE (low performance doing intensive I/O, file lock issues)
+# Mount the S3 bucket using FUSE (low performance doing intensive I/O, file locking issues)
 $ mkdir $HOME/shared-storage-s3
 $ s3fs -o iam_role=ec2InstanceRole -o use_cache=/tmp shared-storage-s3 $HOME/shared-storage-s3
 $ dd if=/dev/zero of=ZERO bs=1M count=1024
@@ -227,7 +227,7 @@ Destroy complete! Resources: 3 destroyed.
 # Done!
 ```
 
-## Deploy a single EC2 instance and attach an exsiting EBS volumen
+## Deploy a single EC2 instance and attach an existing EBS volume
 
 ```bash
 $ cd ec2-with-ebs/
